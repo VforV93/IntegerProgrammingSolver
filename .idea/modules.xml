@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/IntegerProgrammingSolver.iml" filepath="$PROJECT_DIR$/.idea/IntegerProgrammingSolver.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../ML-Project/.idea/ML-Project.iml" filepath="$PROJECT_DIR$/../ML-Project/.idea/ML-Project.iml" />
     </modules>
   </component>
 </project>
