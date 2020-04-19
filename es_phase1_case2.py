@@ -12,9 +12,10 @@ A = np.array([[0, 1, 4],
               [2, -1, 6]], dtype=float)
 # m
 b = np.array([2, -2], dtype=float)
+var = np.array([0, 1, 2], dtype=int)
 
 try:
-    t = Tableau(c, A, b, bland_rule)
+    t = Tableau(c, A, b, var, bland_rule)
 except NoSolution as e:
     print(f"{bcolors.FAIL} {e} {bcolors.ENDC}")
     exit(1)
@@ -31,9 +32,8 @@ try:
         print("|| --- --- --- --- --- ||")
 
     print("|| --- --- --- --- --- --- --- --- --- --- END --- --- --- --- --- --- --- --- --- ||\n")
-    var = [0, 1, 2]
-    var_val = np.zeros(len(var), dtype=float)
-    for i in var:
+    var_val = np.zeros(len(t.var), dtype=float)
+    for i in t.var:
         if i in t.B:
             var_val[i] = np.dot(t.A[:, i], t.b)
 

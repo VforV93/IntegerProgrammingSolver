@@ -12,9 +12,10 @@ A = np.array([[1, 2, 0, 1],
               [0, 1, 2, 0]], dtype=float)
 # m
 b = np.array([-5, 6], dtype=float)
+var = np.array([0, 1, 2], dtype=int)
 
 try:
-    t = Tableau(c, A, b, bland_rule)
+    t = Tableau(c, A, b, var, bland_rule)
 except NoSolution as e:
     print(f"{bcolors.FAIL} {e} {bcolors.ENDC}")
     exit(1)

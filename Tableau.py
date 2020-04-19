@@ -4,13 +4,16 @@ import copy
 
 
 class Tableau:
-    def __init__(self, c, A, b, rule, B=None):
+    def __init__(self, c, A, b, var, rule, B=None):
         self.c = c  # cost vector
         self.A = A  # constraint matrix coefficients
         self.b = b  # constant terms vector
+        self.var = var
         self.B = np.repeat(-1, self.A.shape[0])
         self.rule = rule  # Function to choose wich column enter to the Base
         self._z = float(0)
+        self.__savesol = False
+        self.history = list()
 
         # Check dimensions length of c, A, and b
         m = self.A.shape[0]  # num of rows
@@ -28,8 +31,11 @@ class Tableau:
             if not self._base():
                 print(f"{bcolors.WARNING}No starting Base founded!{bcolors.ENDC}")
                 self.phase1()
-                # print(self)
-                # self.__azzera_costi_base()
+
+        print(self)
+        self.__azzera_costi_base()
+        self.__savesol = True  # after the phase1 I want to store all the pivoting iteration sol and cost
+        self.save_sol()
 
     """
     # Final Tableau if all cost coefficients are positive OR it is not possible to identify a feasible base
@@ -38,7 +44,6 @@ class Tableau:
         if not self._base():
             print(f"{bcolors.FAIL}Feasible Base does not exist!{bcolors.ENDC}")
             raise NoBase("Feasible Base does not exist!")
-            return True
 
         if np.max(self.c[self.B]) != 0 or np.min(self.c[self.B]) != 0:
             self.__azzera_costi_base()
@@ -71,10 +76,12 @@ class Tableau:
         pivot = self._pivot(j)
         i = pivot[0]
         self.__pivoting(i, j)
+        self._base()
+
+        if self.__savesol:
+            self.save_sol()
 
         print("...Ending Pivoting")
-        #aggiorno la base sapendo che colonna
-        self._base()
         return self.A
 
     # individuate the coordinate(i,j) of the pivot corresponding on column j
@@ -145,12 +152,12 @@ class Tableau:
 
         if np.amin(temp_B) >= 0:
             self.B = temp_B
-            print(f"{bcolors.OKGREEN}Base trovata B: {self.B}{bcolors.ENDC}")
+            print(f"{bcolors.OKGREEN}found Base B: {self.B}{bcolors.ENDC}")
             print(self)
             self.__azzera_costi_base()
             return True
         else:
-            print(f"{bcolors.WARNING}Base non trovata{bcolors.ENDC}")
+            print(f"{bcolors.WARNING}Base not found{bcolors.ENDC}")
             return False
 
     """
@@ -212,12 +219,12 @@ class Tableau:
             self.B = copy.deepcopy(phase_tableau.B)
             self.b = copy.deepcopy(phase_tableau.b)
             self._z = phase_tableau._z
-            print(f"{bcolors.OKGREEN}||=== === ===> Fase 1 Completata!{bcolors.ENDC}\n\n")
+            print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}\n\n")
             return True
         else:  # some artificial variable in Base ==> Fail
             # 3) Original problem no solution
             if phase_tableau.sol > 0:
-                print(f"{bcolors.FAIL}||=== === ===> Fase 1 Fallita: Original Problem not possible!{bcolors.ENDC}\n")
+                print(f"{bcolors.FAIL}||=== === ===> Phase 1 Failed: Original Problem not possible!{bcolors.ENDC}\n")
                 raise NoSolution("[phase1] The Original Problem is not possible")
                 return False
             else:
@@ -262,6 +269,14 @@ class Tableau:
     def sol(self):  # Tableau always for a min problem
         return -1*self._z
 
+    def save_sol(self):
+        var_val = np.zeros(len(self.var), dtype=float)
+        for i in self.var:
+            if i in self.B:
+                var_val[i] = np.dot(self.A[:, i], self.b)
+
+        self.history.append((var_val, self.sol))
+
     def __str__(self):
         width = 1
         prec = 4
@@ -283,5 +298,3 @@ class Tableau:
 
         s = '\n'.join(s)
         return s
-
-

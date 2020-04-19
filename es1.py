@@ -14,8 +14,9 @@ A = np.array([[1, 0, 1, 0, 0],
               [1, 2, 0, 0, 1]], dtype=float)
 # m
 b = np.array([2, 3, 5], dtype=float)
+var = np.array([0, 1], dtype=int)
 
-t = Tableau(c, A, b, dantzig_rule)  # , [2,3,4,5])
+t = Tableau(c, A, b, var, dantzig_rule)  # , [2,3,4,5])
 
 
 print("---------")
@@ -27,9 +28,8 @@ try:
         print("|| --- --- --- --- --- ||")
 
     print("|| --- --- --- --- --- --- --- --- --- --- END --- --- --- --- --- --- --- --- --- ||\n")
-    var = [0, 1]
-    var_val = np.zeros(len(var), dtype=float)
-    for i in var:
+    var_val = np.zeros(len(t.var), dtype=float)
+    for i in t.var:
         if i in t.B:
             var_val[i] = np.dot(t.A[:, i], t.b)
 
