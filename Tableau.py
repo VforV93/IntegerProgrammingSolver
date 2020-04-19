@@ -1,5 +1,5 @@
 import numpy as np
-from errors import DimensionError, NoBase, bcolors
+from errors import DimensionError, NoBase, NoSolution, RankAWrong, bcolors
 import copy
 
 
@@ -8,7 +8,6 @@ class Tableau:
         self.c = c  # cost vector
         self.A = A  # constraint matrix coefficients
         self.b = b  # constant terms vector
-        # self.B = np.zeros(self.A.shape[0], dtype=int)  # TODO if this not exist make the Fase1
         self.B = np.repeat(-1, self.A.shape[0])
         self.rule = rule  # Function to choose wich column enter to the Base
         self._z = float(0)
@@ -27,21 +26,25 @@ class Tableau:
         else:
             # applying phase 1
             if not self._base():
-                print(f"{bcolors.WARNING}Impossibile trovare una Base di partenza!{bcolors.ENDC}")
+                print(f"{bcolors.WARNING}No starting Base founded!{bcolors.ENDC}")
                 self.phase1()
                 # print(self)
                 # self.__azzera_costi_base()
 
     """
-    # Final Tableau if all cost coefficients are positive OR it is not possible to indentify a feasible base
+    # Final Tableau if all cost coefficients are positive OR it is not possible to identify a feasible base
     """
     def isend(self):
         if not self._base():
-            print(f"{bcolors.FAIL}Feaseble Base does not exist!{bcolors.ENDC}")
-            raise NoBase("Feaseble Base does not exist!")
+            print(f"{bcolors.FAIL}Feasible Base does not exist!{bcolors.ENDC}")
+            raise NoBase("Feasible Base does not exist!")
             return True
 
-        if np.amin(self.c) < 0:
+        if np.max(self.c[self.B]) != 0 or np.min(self.c[self.B]) != 0:
+            self.__azzera_costi_base()
+            print(self)
+
+        if np.min(self.c) < 0:
             return False
         else:
             return True
@@ -55,7 +58,7 @@ class Tableau:
             print(f"{bcolors.WARNING}Pivoting not possible, a feasible Base does not exist.{bcolors.ENDC}")
             return False
 
-        if np.sum(self.c[self.B]) != 0:
+        if np.max(self.c[self.B]) != 0:
             self.__azzera_costi_base()
             print(self)
 
@@ -67,32 +70,12 @@ class Tableau:
         j = rule(self.c)
         pivot = self._pivot(j)
         i = pivot[0]
-        p = self.A[i, j]
-        print("Individuato Pivot:{:.3f} in colonna: {}, riga: {}".format(p, j, i+1))
-        # column j enter to the Base and the corresponding one, consequently, exit
-        i = i + 1
-        A = np.column_stack((self.A, self.b))
-        A = np.row_stack((np.append(self.c, self._z), A))
-        # riga del pivot da dividere per il pivot stesso
-        A[i] = A[i]/p
-
-        # tutte le altre righe le sommo/sottraggo alla riga del pivot stessa moltiplicata per il valore nella colonna del pivotstesso
-        # al fine di annullare qualsiasi termine nella colonna del pivot --> colonna ENTRANTE
-        for r in range(0, len(A)):
-            if r == i or A[r, j] == 0:
-                continue
-            A[r] = A[r] - A[r, j] * A[i]
-
-        # qui salvataggio vecchio stato, procedo con l'aggiornamento dello stato
-        self.c = A[0, :-1]
-        self._z = A[0, -1]
-        self.A = A[1:, :-1]
-        self.b = A[1:, -1]
+        self.__pivoting(i, j)
 
         print("...Ending Pivoting")
         #aggiorno la base sapendo che colonna
         self._base()
-        return A
+        return self.A
 
     # individuate the coordinate(i,j) of the pivot corresponding on column j
     def _pivot(self, j):
@@ -113,6 +96,30 @@ class Tableau:
                     print("scelgo questo: {}".format(pos_1))
                     return i[pos_1], j
         return i[0], j
+
+    def __pivoting(self, i, j):
+        p = self.A[i, j]
+        print("Pivot founded:{:.3f} in column: {}, row: {}".format(p, j, i + 1))
+        # column j enter to the Base and the corresponding one, consequently, exit
+        i = i + 1
+        A = np.column_stack((self.A, self.b))
+        A = np.row_stack((np.append(self.c, self._z), A))
+        # pivot row divided by the pivot value
+        A[i] = A[i] / p
+
+        # tutte le altre righe le sommo/sottraggo alla riga del pivot stessa
+        # moltiplicata per il valore nella colonna del pivotstesso
+        # al fine di annullare qualsiasi termine nella colonna del pivot --> colonna ENTRANTE
+        for r in range(0, len(A)):
+            if r == i or A[r, j] == 0:
+                continue
+            A[r] = A[r] - A[r, j] * A[i]
+
+        # Status update
+        self.c = A[0, :-1]
+        self._z = A[0, -1]
+        self.A = A[1:, :-1]
+        self.b = A[1:, -1]
 
     """
     # If exist a Base, found it and return True, False otherwise. Check also that the b's values are non negative
@@ -199,6 +206,7 @@ class Tableau:
         # 3 Possibilities:
         # 1) All artificial variables out, True variables in Base
         check = np.isin(phase_tableau.B, artificial_base)
+
         if not check.any():
             self.A = copy.deepcopy(phase_tableau.A[:, :self.A.shape[1]])
             self.B = copy.deepcopy(phase_tableau.B)
@@ -206,9 +214,39 @@ class Tableau:
             self._z = phase_tableau._z
             print(f"{bcolors.OKGREEN}||=== === ===> Fase 1 Completata!{bcolors.ENDC}\n\n")
             return True
-        else:
-            print(f"{bcolors.FAIL}||=== === ===> Fase 1 Fallita!{bcolors.ENDC}\n\n")
-            return False
+        else:  # some artificial variable in Base ==> Fail
+            # 3) Original problem no solution
+            if phase_tableau.sol > 0:
+                print(f"{bcolors.FAIL}||=== === ===> Fase 1 Fallita: Original Problem not possible!{bcolors.ENDC}\n")
+                raise NoSolution("[phase1] The Original Problem is not possible")
+                return False
+            else:
+                # 2) Artificial variable in Base with 0 cost ==>
+                #    Simplex Algorithm on columns with cij>=0 and pivot also negative
+                while len(phase_tableau.B[check]) > 0:
+                    i_art_col = phase_tableau.B[check][0]  # column I want to get out from the Base
+                    i_row = np.argmax(phase_tableau.A[:, i_art_col])
+                    pivot_done = False
+                    for j in range(0, phase_tableau.A.shape[1]):
+                        if j not in phase_tableau.B and j not in artificial_base:
+                            if phase_tableau.A[i_row, j] != 0:
+                                phase_tableau.__pivoting(i_row, j)
+                                phase_tableau._base()
+                                print(phase_tableau)
+                                pivot_done = True
+                                break
+
+                    # I can't find a good candidate as pivot ==> all 0 in
+                    if not pivot_done:
+                        raise RankAWrong(f"[phase1] The Rank of the constraints matrix is not "
+                                         f"{self.A.shape[0]}, eliminate the row number {i_row}")
+                    check = np.isin(phase_tableau.B, artificial_base)
+
+                self.A = copy.deepcopy(phase_tableau.A[:, :self.A.shape[1]])
+                self.B = copy.deepcopy(phase_tableau.B)
+                self.b = copy.deepcopy(phase_tableau.b)
+                self._z = phase_tableau._z
+                print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}(case 2)\n\n")
 
     def _add_variable(self, new_c, new_a):
         print("Adding new variables")
@@ -220,35 +258,30 @@ class Tableau:
         self.c = np.append(self.c, new_c)
         self.A = np.c_[self.A, new_a]
 
+    @property
+    def sol(self):  # Tableau always for a min problem
+        return -1*self._z
+
     def __str__(self):
         width = 1
         prec = 4
         align = '>'
         s = []
         form = (len(self.c))*' {:{align} {width}.{prec}f} |'
-        s.append('\x1b[0;30;41m' + form.format(*self.c, align=align, width=width, prec=prec) + '\x1b[0m' + '\x1b[0;30;42m {:{align} {width}.{prec}f} \x1b[0m'.format(self._z, align=align, width=width, prec=prec))
+        s.append('\x1b[0;30;41m' + form.format(*self.c, align=align, width=width, prec=prec) +
+                 '\x1b[0m' + '\x1b[0;30;42m {:{align} {width}.{prec}f} \x1b[0m'.format(self._z, align=align,
+                                                                                       width=width, prec=prec))
         for i, row in enumerate(self.A):
             riga = ""
             for j in range(0, self.A.shape[1]):
-                r = ' {:{align} {width}.{prec}f} |' if j not in self.B else '\x1b[0;30;44m {:{align} {width}.{prec}f} |\x1b[0m'
+                r = ' {:{align} {width}.{prec}f} |' if j not in self.B else \
+                    '\x1b[0;30;44m {:{align} {width}.{prec}f} |\x1b[0m'
                 riga = riga + r
-            s.append(riga.format(*row, align=align, width=width, prec=prec) + '\x1b[0;30;43m {:{align} {width}.{prec}f} \x1b[0m'.format(self.b[i], align=align, width=width, prec=prec))
+            s.append(riga.format(*row, align=align, width=width, prec=prec) +
+                     '\x1b[0;30;43m {:{align} {width}.{prec}f} \x1b[0m'.format(self.b[i], align=align,
+                                                                               width=width, prec=prec))
 
         s = '\n'.join(s)
         return s
 
 
-    """
-    s = []
-        form = (len(self.c))*' {:^{width} 4f} |'
-        s.append('\x1b[0;30;41m' + form.format(*self.c, width=5) + '\x1b[0m' + '\x1b[0;30;42m {:^{width} 4f} \x1b[0m'.format(self._z, width=5))
-        for i, row in enumerate(self.A):
-            riga = ""
-            for j in range(0, self.A.shape[1]):
-                r = ' {:^{width} 4f} |' if j not in self.B else '\x1b[0;30;44m {:^{width} 4f} |\x1b[0m'
-                riga = riga + r
-            s.append(riga.format(*row, width=5) + '\x1b[0;30;43m {:^{width} 4f} \x1b[0m'.format(self.b[i], width=5))
-
-        s = '\n'.join(s)
-        return s
-    """

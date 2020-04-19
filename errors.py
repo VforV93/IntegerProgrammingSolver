@@ -5,6 +5,7 @@ class DimensionError(Exception):
     def __str__(self):
         return repr(self.value)
 
+
 class NoBase(Exception):
     def __init__(self, value):
         self.value = value
@@ -12,12 +13,30 @@ class NoBase(Exception):
     def __str__(self):
         return repr(self.value)
 
+
 class NoZeroBaseCost(Exception):
     def __init__(self, value):
         self.value = value
 
     def __str__(self):
         return repr(self.value)
+
+
+class NoSolution(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
+class RankAWrong(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
 
 class bcolors:
     HEADER = '\033[95m'

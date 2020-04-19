@@ -1,22 +1,26 @@
-
 import numpy as np
-from errors import DimensionError, NoBase, bcolors
+from errors import DimensionError, NoBase, NoSolution, RankAWrong, bcolors
 from Tableau import Tableau
-from rules import dantzig_rule
 
+from rules import bland_rule
 
 print("\n|| --- --- --- --- --- --- --- --- --- --- START --- --- --- --- --- --- --- --- --- --- ||")
 # n
-c = np.array([-1, -1, 0, 0, 0], dtype=float)
+c = np.array([1, 1, 10], dtype=float)
 # m x n
-A = np.array([[1, 1, 1, 0, 0],
-              [1, -1, 0, -1, 0],
-              [1, 0, 0, 0, 1]], dtype=float)
+A = np.array([[0, 1, 4],
+              [2, -1, 6]], dtype=float)
 # m
-b = np.array([8, 1, 6], dtype=float)
+b = np.array([2, -2], dtype=float)
 
-t = Tableau(c, A, b, dantzig_rule)  # , [2,3,4,5])
-
+try:
+    t = Tableau(c, A, b, bland_rule)
+except NoSolution as e:
+    print(f"{bcolors.FAIL} {e} {bcolors.ENDC}")
+    exit(1)
+except RankAWrong as e:
+    print(f"{bcolors.FAIL} {e} {bcolors.ENDC}")
+    exit(1)
 
 print("---------")
 print(t)
@@ -27,13 +31,15 @@ try:
         print("|| --- --- --- --- --- ||")
 
     print("|| --- --- --- --- --- --- --- --- --- --- END --- --- --- --- --- --- --- --- --- ||\n")
-    var = [0, 1]
+    var = [0, 1, 2]
     var_val = np.zeros(len(var), dtype=float)
     for i in var:
         if i in t.B:
             var_val[i] = np.dot(t.A[:, i], t.b)
 
-    print(f"{bcolors.OKGREEN}{bcolors.BOLD}{bcolors.UNDERLINE}Soluzione [x1, x2] = [{var_val[0]}, {var_val[1]}]{bcolors.ENDC}")
+    print(f"{bcolors.OKGREEN}{bcolors.BOLD}{bcolors.UNDERLINE}Soluzione [x1, x2, x3] = [{var_val[0]}, "
+          f"{var_val[1]}, {var_val[2]}]{bcolors.ENDC}")
+
     print("** Min Problem **")
     sol = t._z
     print(f"-z =  {sol}")

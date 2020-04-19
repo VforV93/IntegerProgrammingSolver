@@ -20,8 +20,7 @@ t = Tableau(c, A, b, dantzig_rule)  # , [2,3,4,5])
 
 print("---------")
 print(t)
-# print('\n')
-# exit(0)
+
 try:
     while not t.isend():
         t.step()
