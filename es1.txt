@@ -1,8 +1,0 @@
-c = np.array([-3, -5, 0, 0, 0, 0], dtype=float)
-# m x n
-A = np.array([[1, 1, 1, 0, 0, 0],
-              [1, 0, 0, 1, 0, 0],
-              [0, 1, 0, 0, 1, 2],
-              [1, 2, 0, 0, 0, 1]], dtype=float)
-# m
-b = np.array([12, 10, 6, 16], dtype=float)

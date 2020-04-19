@@ -1,4 +1,3 @@
-
 import numpy as np
 from errors import DimensionError, NoBase, bcolors
 import copy
@@ -58,6 +57,7 @@ class Tableau:
 
         if np.sum(self.c[self.B]) != 0:
             self.__azzera_costi_base()
+            print(self)
 
         if self.isend():
             print("Stop Pivoting - End!")
@@ -96,15 +96,23 @@ class Tableau:
 
     # individuate the coordinate(i,j) of the pivot corresponding on column j
     def _pivot(self, j):
-        i = -1
+        i = []
         _min = 1000
-        for r in range(0, len(self.A)):
-            if self.A[r,j] > 0:
-                ba = self.b[r]/self.A[r,j]
+        for r in range(0, self.A.shape[0]):
+            if self.A[r, j] > 0:
+                ba = self.b[r]/self.A[r, j]
                 if ba < _min:
                     _min = ba
-                    i = r
-        return i, j
+                    i = [r]
+                elif ba == _min:
+                    i.append(r)
+        if len(i) > 1:  # parity on the choice of the pivot
+            for ib in self.B:  # the most left column must go out
+                pos_1 = np.argmax(self.A[:, ib])
+                if pos_1 in i:
+                    print("scelgo questo: {}".format(pos_1))
+                    return i[pos_1], j
+        return i[0], j
 
     """
     # If exist a Base, found it and return True, False otherwise. Check also that the b's values are non negative
@@ -131,6 +139,7 @@ class Tableau:
         if np.amin(temp_B) >= 0:
             self.B = temp_B
             print(f"{bcolors.OKGREEN}Base trovata B: {self.B}{bcolors.ENDC}")
+            print(self)
             self.__azzera_costi_base()
             return True
         else:
@@ -157,6 +166,10 @@ class Tableau:
         if not self._base():
             print("There's no any Base")
             return False
+        if np.amin(self.c[self.B]) == 0 and np.amax(self.c[self.B]) == 0:
+            print("Base cost already zero")
+            return True
+
         for j in self.B:
             if self.c[j] != 0:
                 molt = self.c[j]

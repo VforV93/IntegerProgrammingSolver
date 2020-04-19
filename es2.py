@@ -2,10 +2,7 @@
 import numpy as np
 from errors import DimensionError, NoBase, bcolors
 from Tableau import Tableau
-
-
-def dantzig_rule(c):
-    return np.argmin(c)
+from rules import dantzig_rule
 
 
 print("\n|| --- --- --- --- --- --- --- --- --- --- START --- --- --- --- --- --- --- --- --- --- ||")
@@ -28,8 +25,9 @@ print(t)
 try:
     while not t.isend():
         t.step()
-        print("|| --- --- --- ||")
+        print("|| --- --- --- --- --- ||")
 
+    print("|| --- --- --- --- --- --- --- --- --- --- END --- --- --- --- --- --- --- --- --- ||\n")
     var = [0, 1]
     var_val = np.zeros(len(var), dtype=float)
     for i in var:
@@ -37,8 +35,13 @@ try:
             var_val[i] = np.dot(t.A[:, i], t.b)
 
     print(f"{bcolors.OKGREEN}{bcolors.BOLD}{bcolors.UNDERLINE}Soluzione [x1, x2] = [{var_val[0]}, {var_val[1]}]{bcolors.ENDC}")
-
+    print("** Min Problem **")
+    sol = t._z
+    print(f"-z =  {sol}")
+    sol = -1 * sol
+    print(f" z = {sol}")
+    print("** Max Problem **")
+    sol = -1 * sol
+    print(f" z = {sol}")
 except NoBase:
     print("Error in finding a Base")
-"""
-"""
