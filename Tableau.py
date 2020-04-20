@@ -4,7 +4,7 @@ import copy
 
 
 class Tableau:
-    def __init__(self, c, A, b, var, rule, B=None):
+    def __init__(self, c, A, b, var, rule, B=None, v=False):
         self.c = c  # cost vector
         self.A = A  # constraint matrix coefficients
         self.b = b  # constant terms vector
@@ -14,6 +14,7 @@ class Tableau:
         self._z = float(0)
         self.__savesol = False
         self.history = list()
+        self.v = v  # Verbosity
 
         # Check dimensions length of c, A, and b
         m = self.A.shape[0]  # num of rows
@@ -23,7 +24,9 @@ class Tableau:
         if not len(self.b) == m:
             raise DimensionError("Constant terms length must be equal to m(# A Rows)")
 
-        print(self)
+        if self.v:
+            print(self)
+
         if B is not None:
             self.B = np.array(B, dtype=int)
             self.__azzera_costi_base()
@@ -31,10 +34,12 @@ class Tableau:
         else:
             # applying phase 1
             if not self._base():
-                print(f"{bcolors.WARNING}No starting Base founded!{bcolors.ENDC}")
+                if self.v:
+                    print(f"{bcolors.WARNING}No starting Base founded!{bcolors.ENDC}")
                 self.phase1()
 
-        print(self)
+        if self.v:
+            print(self)
         self.__savesol = True  # after the phase1 I want to store all the pivoting iteration sol and cost
 
     """
@@ -42,12 +47,14 @@ class Tableau:
     """
     def isend(self):
         if not self._base():
-            print(f"{bcolors.FAIL}Feasible Base does not exist!{bcolors.ENDC}")
+            if self.v:
+                print(f"{bcolors.FAIL}Feasible Base does not exist!{bcolors.ENDC}")
             raise NoBase("Feasible Base does not exist!")
 
         if np.max(self.c[self.B]) != 0 or np.min(self.c[self.B]) != 0:
             self.__azzera_costi_base()
-            print(self)
+            if self.v:
+                print(self)
 
         if np.min(self.c) < 0:
             return False
@@ -55,7 +62,8 @@ class Tableau:
             return True
 
     def step(self, rule=None):
-        print("Eseguendo Pivoting...")
+        if self.v:
+            print("Eseguendo Pivoting...")
         #TODO before pivoting I want to save the states to take track of all the steps
 
         # for pivoting I need a feasible base
@@ -68,7 +76,8 @@ class Tableau:
             print(self)
 
         if self.isend():
-            print("Stop Pivoting - End!")
+            if self.v:
+                print("Stop Pivoting - End!")
             return True
         if not rule:
             rule = self.rule
@@ -81,7 +90,8 @@ class Tableau:
         if self.__savesol:
             self.save_sol()
 
-        print("...Ending Pivoting")
+        if self.v:
+            print("...Ending Pivoting")
         return self.A
 
     # individuate the coordinate(i,j) of the pivot corresponding on column j
@@ -100,13 +110,13 @@ class Tableau:
             for ib in self.B:  # the most left column must go out
                 pos_1 = np.argmax(self.A[:, ib])
                 if pos_1 in i:
-                    print("scelgo questo: {}".format(pos_1))
                     return i[pos_1], j
         return i[0], j
 
     def __pivoting(self, i, j):
         p = self.A[i, j]
-        print("Pivot founded:{:.3f} in column: {}, row: {}".format(p, j, i + 1))
+        if self.v:
+            print("Pivot founded:{:.3f} in column: {}, row: {}".format(p, j, i + 1))
         # column j enter to the Base and the corresponding one, consequently, exit
         i = i + 1
         A = np.column_stack((self.A, self.b))
@@ -137,7 +147,8 @@ class Tableau:
            np.allclose(self.A[:, self.B], np.eye(self.A[:, self.B].shape[0])):
             return True
         else:
-            print("Individuando una Base...")
+            if self.v:
+                print("Individuando una Base...")
         # mxm
         m = self.A.shape[0]
         temp_B = np.full(m, -1, dtype=int)
@@ -152,12 +163,14 @@ class Tableau:
 
         if np.amin(temp_B) >= 0:
             self.B = temp_B
-            print(f"{bcolors.OKGREEN}found Base B: {self.B}{bcolors.ENDC}")
-            print(self)
+            if self.v:
+                print(f"{bcolors.OKGREEN}found Base B: {self.B}{bcolors.ENDC}")
+                print(self)
             self.__azzera_costi_base()
             return True
         else:
-            print(f"{bcolors.WARNING}Base not found{bcolors.ENDC}")
+            if self.v:
+                print(f"{bcolors.WARNING}Base not found{bcolors.ENDC}")
             return False
 
     """
@@ -178,10 +191,12 @@ class Tableau:
 
     def __azzera_costi_base(self):
         if not self._base():
-            print("There's no any Base")
+            if self.v:
+                print("There's no any Base")
             return False
         if np.amin(self.c[self.B]) == 0 and np.amax(self.c[self.B]) == 0:
-            print("Base cost already zero")
+            if self.v:
+                print("Base cost already zero")
             return True
 
         for j in self.B:
@@ -190,12 +205,14 @@ class Tableau:
                 self.c = self.c - molt * self.A[np.argmax(self.A[:, j]), :]
                 self._z = self._z - molt * self.b[np.argmax(self.A[:, j])]
 
-        print("Base costs set to zero")
+        if self.v:
+            print("Base costs set to zero")
         return True
 
     # Find a Starting Feasible Solution for the Simplex Algorithm
     def phase1(self):
-        print(f"\n{bcolors.OKGREEN}||=== === ===> Starting Phase 1...{bcolors.ENDC}")
+        if self.v:
+            print(f"\n{bcolors.OKGREEN}||=== === ===> Starting Phase 1...{bcolors.ENDC}")
         phase_tableau = copy.deepcopy(self)
         phase_tableau.c.fill(0)
         m = self.A.shape[0]  # num of rows
@@ -205,10 +222,12 @@ class Tableau:
         artificial_base = phase_tableau.B
         phase_tableau.__azzera_costi_base()
 
-        print(phase_tableau)
+        if self.v:
+            print(phase_tableau)
         while not phase_tableau.isend():
             phase_tableau.step()
-            print(phase_tableau)
+            if self.v:
+                print(phase_tableau)
 
         # 3 Possibilities:
         # 1) All artificial variables out, True variables in Base
@@ -219,7 +238,8 @@ class Tableau:
             self.B = copy.deepcopy(phase_tableau.B)
             self.b = copy.deepcopy(phase_tableau.b)
             # self._z = copy.deepcopy(phase_tableau._z)
-            print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}\n\n")
+            if self.v:
+                print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}\n\n")
             self.__azzera_costi_base()
             self.save_sol()
             return True
@@ -228,7 +248,6 @@ class Tableau:
             if phase_tableau.sol > 0:
                 print(f"{bcolors.FAIL}||=== === ===> Phase 1 Failed: Original Problem not possible!{bcolors.ENDC}\n")
                 raise NoSolution("[phase1] The Original Problem is not possible")
-                return False
             else:
                 # 2) Artificial variable in Base with 0 cost ==>
                 #    Simplex Algorithm on columns with cij>=0 and pivot also negative
@@ -257,12 +276,13 @@ class Tableau:
                 self._z = phase_tableau._z
                 self.__azzera_costi_base()
                 self.save_sol()
-                print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}(case 2)\n\n")
+                if self.v:
+                    print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}(case 2)\n\n")
 
     def _add_variable(self, new_c, new_a):
-        print("Adding new variables")
+        if self.v:
+            print("Adding new variables")
         if len(new_a) != self.A.shape[0]:
-            print(len(new_a))
             raise DimensionError("[_add_variable] new_a's dimension incorrect.")
         if len(new_c) != new_a.shape[1]:
             raise DimensionError("[_add_variable] new_c's dimension incorrect.")
@@ -272,7 +292,8 @@ class Tableau:
 
 
     def _add_constraint(self, new_r, new_b):
-        print("Adding new constraints")  # constraint = new raw
+        if self.v:
+            print("Adding new constraints")  # constraint = new raw
         if new_r.shape[1] != self.A.shape[1]:
             raise DimensionError("[_add_constraint] new_r's dimension incorrect.")
         if len(new_b) != new_r.shape[0]:

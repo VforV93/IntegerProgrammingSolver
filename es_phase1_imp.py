@@ -18,10 +18,5 @@ try:
     t = Tableau(c, A, b, var, bland_rule)
 except NoSolution as e:
     print(f"{bcolors.FAIL} {e} {bcolors.ENDC}")
-    exit(1)
 except RankAWrong as e:
     print(f"{bcolors.FAIL} {e} {bcolors.ENDC}")
-    exit(1)
-
-print("---------")
-print(t)

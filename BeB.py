@@ -3,6 +3,7 @@ import numpy as np
 import math
 import copy
 import Tableau
+from errors import bcolors
 sep = '_'
 
 
@@ -15,18 +16,23 @@ def depth_first(nodes_list, el):
 
 
 class BeB:
-    def __init__(self, root: Tableau, insert_rule=breadth_first):
+    def __init__(self, root: Tableau, insert_rule=breadth_first, v=True):
         self.nodes = list()  # (Tableau, idx, LB)
         self.explored = list()  # TODO for making a nice and beautiful tree print
         self.insert_rule = insert_rule
         self.add(root)
         self.z = math.inf
         self.best_int_sol = None
+        self.v = v
+
+        if self.v:
+            print("\nRoot Node")
+            print(root)
+            print(root.var_values())
 
     def add(self, el, level=None, LB=-1*math.inf):
         if level is None:
             level = '0'
-
         self.insert_rule(self.nodes, (el, level, LB))
 
     def isend(self):
@@ -42,8 +48,12 @@ class BeB:
         idx = el[1]
         LB = el[2]
 
+        if self.v:
+            print(f"\nExpanding Node: {idx} ...")
+
         if LB >= self.z:
-            print("Node Killed !!!")
+            if self.v:
+                print(f"{bcolors.UNDERLINE}Node Killed !!!{bcolors.ENDC}")
             self.explored.append(n)
             return True
 
@@ -67,14 +77,20 @@ class BeB:
                 new_col[-1] = 1
                 new_c = np.array([0], dtype=float)
                 temp_t._add_variable(new_c, new_col[:, None])
-                print(temp_t)
-                if not temp_t._base():
-                    temp_t.phase1()
-                print(temp_t)
 
-                new_lev_idx = idx + sep + str(j*2)
-                self.add(temp_t, new_lev_idx, math.ceil(n.sol))
-                print(new_lev_idx)
+                if not temp_t._base():
+                    try:
+                        temp_t.phase1()
+
+                        new_lev_idx = idx + sep + str(j * len(n.var))
+                        self.add(temp_t, new_lev_idx, math.ceil(n.sol))
+                        if self.v:
+                            print(f"{bcolors.OKGREEN}Generate and Added Node "
+                                  f"{new_lev_idx}{bcolors.ENDC} from variable: {j}")
+                    except:
+                        if self.v:
+                            print(f"{bcolors.WARNING}Discarded Node {new_lev_idx}{bcolors.ENDC} from variable: {j}")
+                        pass
 
                 # Constraint 2: xj -s = int(var) + 1 or -xj +s = -int(var) - 1
                 temp_t = copy.deepcopy(n)
@@ -85,17 +101,22 @@ class BeB:
                 new_col[-1] = -1
                 temp_t._add_variable(new_c, new_col[:, None])
 
-                print(temp_t)
                 if not temp_t._base():
-                    temp_t.phase1()
+                    try:
+                        temp_t.phase1()
+                        new_lev_idx = idx + sep + str(j * len(n.var) + 1)
+                        self.add(temp_t, new_lev_idx, math.ceil(n.sol))
+                        if self.v:
+                            print(f"{bcolors.OKGREEN}Generate and Added Node "
+                                  f"{new_lev_idx}{bcolors.ENDC} from variable: {j}")
+                    except:
+                        if self.v:
+                            print(f"{bcolors.WARNING}Discarded Node {new_lev_idx}{bcolors.ENDC} from variable: {j}")
+                        pass
 
-                print(temp_t)
-
-                new_lev_idx = idx + sep + str(j * 2 +1)
-                self.add(temp_t, new_lev_idx, math.ceil(n.sol))
-                print(new_lev_idx)
-
-        if int_var: # I found integer variables
+        if int_var:  # Found integer variables
+            if self.v:
+                print(f"{bcolors.OKGREEN}{bcolors.UNDERLINE}Integer Solution Found, z updated! ({var_val}){bcolors.ENDC}")
             self.z = n.sol
             self.best_int_sol = var_val
 

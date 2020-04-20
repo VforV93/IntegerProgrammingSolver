@@ -16,7 +16,7 @@ A = np.array([[1, 0, 1, 0, 0],
 b = np.array([3, 3, 12], dtype=float)
 var = np.array([0, 1], dtype=int)
 
-t = Tableau(c, A, b, var, dantzig_rule)  # , [2,3,4,5])
+t = Tableau(c, A, b, var, dantzig_rule, v=1)
 
 
 print("---------")
