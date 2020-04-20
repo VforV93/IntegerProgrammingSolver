@@ -26,6 +26,8 @@ class Tableau:
         print(self)
         if B is not None:
             self.B = np.array(B, dtype=int)
+            self.__azzera_costi_base()
+            self.save_sol()
         else:
             # applying phase 1
             if not self._base():
@@ -33,9 +35,7 @@ class Tableau:
                 self.phase1()
 
         print(self)
-        self.__azzera_costi_base()
         self.__savesol = True  # after the phase1 I want to store all the pivoting iteration sol and cost
-        self.save_sol()
 
     """
     # Final Tableau if all cost coefficients are positive OR it is not possible to identify a feasible base
@@ -218,8 +218,10 @@ class Tableau:
             self.A = copy.deepcopy(phase_tableau.A[:, :self.A.shape[1]])
             self.B = copy.deepcopy(phase_tableau.B)
             self.b = copy.deepcopy(phase_tableau.b)
-            self._z = phase_tableau._z
+            # self._z = copy.deepcopy(phase_tableau._z)
             print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}\n\n")
+            self.__azzera_costi_base()
+            self.save_sol()
             return True
         else:  # some artificial variable in Base ==> Fail
             # 3) Original problem no solution
@@ -253,29 +255,46 @@ class Tableau:
                 self.B = copy.deepcopy(phase_tableau.B)
                 self.b = copy.deepcopy(phase_tableau.b)
                 self._z = phase_tableau._z
+                self.__azzera_costi_base()
+                self.save_sol()
                 print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}(case 2)\n\n")
 
     def _add_variable(self, new_c, new_a):
         print("Adding new variables")
         if len(new_a) != self.A.shape[0]:
-            raise DimensionError("[__add_variable] new_a's dimension incorrect.")
+            print(len(new_a))
+            raise DimensionError("[_add_variable] new_a's dimension incorrect.")
         if len(new_c) != new_a.shape[1]:
-            raise DimensionError("[__add_variable] new_c's dimension incorrect.")
+            raise DimensionError("[_add_variable] new_c's dimension incorrect.")
 
         self.c = np.append(self.c, new_c)
         self.A = np.c_[self.A, new_a]
+
+
+    def _add_constraint(self, new_r, new_b):
+        print("Adding new constraints")  # constraint = new raw
+        if new_r.shape[1] != self.A.shape[1]:
+            raise DimensionError("[_add_constraint] new_r's dimension incorrect.")
+        if len(new_b) != new_r.shape[0]:
+            raise DimensionError("[_add_constraint] new_b's dimension incorrect.")
+
+        self.b = np.append(self.b, new_b)
+        self.A = np.vstack((self.A, new_r))
 
     @property
     def sol(self):  # Tableau always for a min problem
         return -1*self._z
 
     def save_sol(self):
+        var_val = self.var_values()
+        self.history.append((var_val, self.sol))
+
+    def var_values(self):
         var_val = np.zeros(len(self.var), dtype=float)
         for i in self.var:
             if i in self.B:
                 var_val[i] = np.dot(self.A[:, i], self.b)
-
-        self.history.append((var_val, self.sol))
+        return var_val
 
     def __str__(self):
         width = 1

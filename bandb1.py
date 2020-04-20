@@ -2,21 +2,21 @@
 import numpy as np
 from errors import NoBase, bcolors
 from Tableau import Tableau
-from rules import dantzig_rule
-
+from rules import bland_rule
+from BeB import BeB
 
 print("\n|| --- --- --- --- --- --- --- --- --- --- START --- --- --- --- --- --- --- --- --- --- ||")
 # n
-c = np.array([1, -3, 0, 0, 0], dtype=float)
+c = np.array([-1, -2, 0, 0, 0], dtype=float)
 # m x n
-A = np.array([[1, 0, 1, 0, 0],
-              [0, 1, 0, 1, 0],
-              [4, 3, 0, 0, -1]], dtype=float)
+A = np.array([[4, 6, 1, 0, 0],
+              [2, 1, 0, -1, 0],
+              [0, 1, 0, 0, 1]], dtype=float)
 # m
-b = np.array([3, 3, 12], dtype=float)
+b = np.array([24, 4, 3], dtype=float)
 var = np.array([0, 1], dtype=int)
 
-t = Tableau(c, A, b, var, dantzig_rule)  # , [2,3,4,5])
+t = Tableau(c, A, b, var, bland_rule)  # , [2,3,4,5])
 
 
 print("---------")
@@ -42,3 +42,10 @@ try:
     print(f" z = {sol}")
 except NoBase:
     print("Error in finding a Base")
+
+
+beb = BeB(t)
+while not beb.isend():
+    beb.expand()
+
+print("FINE")
