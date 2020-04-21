@@ -85,7 +85,8 @@ class Tableau:
         pivot = self._pivot(j)
         i = pivot[0]
         self.__pivoting(i, j)
-        self._base()
+        self.B[np.argmax(self.A[:, j])] = j
+        # self._base()
 
         if self.__savesol:
             self.save_sol()
@@ -133,10 +134,10 @@ class Tableau:
             A[r] = A[r] - A[r, j] * A[i]
 
         # Status update
-        self.c = A[0, :-1]
-        self._z = A[0, -1]
-        self.A = A[1:, :-1]
-        self.b = A[1:, -1]
+        self.c = np.around(A[0, :-1], decimals=8)
+        self._z = np.around(A[0, -1], decimals=8)
+        self.A = np.around(A[1:, :-1], decimals=8)
+        self.b = np.around(A[1:, -1], decimals=8)
 
     """
     # If exist a Base, found it and return True, False otherwise. Check also that the b's values are non negative
@@ -219,7 +220,7 @@ class Tableau:
         phase_tableau._z = 0
         phase_tableau._add_variable(np.ones(m, dtype=float), np.eye(m))
         phase_tableau.B = np.array(range(len(phase_tableau.c)-m, len(phase_tableau.c)))
-        artificial_base = phase_tableau.B
+        artificial_base = copy.deepcopy(phase_tableau.B)
         phase_tableau.__azzera_costi_base()
 
         if self.v:
