@@ -123,6 +123,7 @@ class BeB:
         self.explored.append(n)
         return True
 
+
     def __str__(self):
         if len(self.nodes) > 0:
             return ', '.join(map(str, self.nodes))

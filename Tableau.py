@@ -4,17 +4,18 @@ import copy
 
 
 class Tableau:
-    def __init__(self, c, A, b, var, rule, B=None, v=False):
-        self.c = c  # cost vector
-        self.A = A  # constraint matrix coefficients
-        self.b = b  # constant terms vector
-        self.var = var
+    def __init__(self, c, A, b, var, rule, B=None, v=False, approximation=6):
+        self.c = c                  # cost vector
+        self.A = A                  # constraint matrix coefficients
+        self.b = b                  # constant terms vector
+        self.var = var              # indexes of the "real" variables
         self.B = np.repeat(-1, self.A.shape[0])
-        self.rule = rule  # Function to choose wich column enter to the Base
-        self._z = float(0)
-        self.__savesol = False
-        self.history = list()
+        self.rule = rule            # Function to choose wich column enter to the Base
         self.v = v  # Verbosity
+        self.history = list()
+        self._z = float(0)          # solution cost
+        self.__savesol = False
+        self.__appr = approximation
 
         # Check dimensions length of c, A, and b
         m = self.A.shape[0]  # num of rows
@@ -35,7 +36,7 @@ class Tableau:
             # applying phase 1
             if not self._base():
                 if self.v:
-                    print(f"{bcolors.WARNING}No starting Base founded!{bcolors.ENDC}")
+                    print(f"{bcolors.WARNING}No starting Base founded! ==> Phase1{bcolors.ENDC}")
                 self.phase1()
 
         if self.v:
@@ -108,10 +109,10 @@ class Tableau:
                 elif ba == _min:
                     i.append(r)
         if len(i) > 1:  # parity on the choice of the pivot
-            for ib in self.B:  # the most left column must go out
-                pos_1 = np.argmax(self.A[:, ib])
+            for ib in self.B:  # the most left column in base must go out - blend rule specification
+                pos_1 = np.argmax(self.A[:, ib])  # 1's position in the ib's column
                 if pos_1 in i:
-                    return i[pos_1], j
+                    return pos_1, j
         return i[0], j
 
     def __pivoting(self, i, j):
@@ -134,10 +135,10 @@ class Tableau:
             A[r] = A[r] - A[r, j] * A[i]
 
         # Status update
-        self.c = np.around(A[0, :-1], decimals=8)
-        self._z = np.around(A[0, -1], decimals=8)
-        self.A = np.around(A[1:, :-1], decimals=8)
-        self.b = np.around(A[1:, -1], decimals=8)
+        self.c = np.around(A[0, :-1], self.__appr)
+        self._z = np.around(A[0, -1], self.__appr)
+        self.A = np.around(A[1:, :-1], self.__appr)
+        self.b = np.around(A[1:, -1], self.__appr)
 
     """
     # If exist a Base, found it and return True, False otherwise. Check also that the b's values are non negative
@@ -149,7 +150,7 @@ class Tableau:
             return True
         else:
             if self.v:
-                print("Individuando una Base...")
+                print("Identifying a Base...")
         # mxm
         m = self.A.shape[0]
         temp_B = np.full(m, -1, dtype=int)
@@ -213,7 +214,7 @@ class Tableau:
     # Find a Starting Feasible Solution for the Simplex Algorithm
     def phase1(self):
         if self.v:
-            print(f"\n{bcolors.OKGREEN}||=== === ===> Starting Phase 1...{bcolors.ENDC}")
+            print(f"\n{bcolors.OKGREEN}||=== === === === ===> Starting Phase 1...{bcolors.ENDC}")
         phase_tableau = copy.deepcopy(self)
         phase_tableau.c.fill(0)
         m = self.A.shape[0]  # num of rows
@@ -240,14 +241,14 @@ class Tableau:
             self.b = copy.deepcopy(phase_tableau.b)
             # self._z = copy.deepcopy(phase_tableau._z)
             if self.v:
-                print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}\n\n")
+                print(f"{bcolors.OKGREEN}||=== === === === ===> Phase 1 Completed!{bcolors.ENDC}\n\n")
             self.__azzera_costi_base()
             self.save_sol()
             return True
         else:  # some artificial variable in Base ==> Fail
             # 3) Original problem no solution
             if phase_tableau.sol > 0:
-                print(f"{bcolors.FAIL}||=== === ===> Phase 1 Failed: Original Problem not possible!{bcolors.ENDC}\n")
+                print(f"{bcolors.FAIL}||=== === === === ===> Phase 1 Failed: Original Problem not possible!{bcolors.ENDC}\n")
                 raise NoSolution("[phase1] The Original Problem is not possible")
             else:
                 # 2) Artificial variable in Base with 0 cost ==>
@@ -278,7 +279,7 @@ class Tableau:
                 self.__azzera_costi_base()
                 self.save_sol()
                 if self.v:
-                    print(f"{bcolors.OKGREEN}||=== === ===> Phase 1 Completed!{bcolors.ENDC}(case 2)\n\n")
+                    print(f"{bcolors.OKGREEN}||=== === === === ===> Phase 1 Completed!{bcolors.ENDC}(case 2)\n\n")
 
     def _add_variable(self, new_c, new_a):
         if self.v:
@@ -290,7 +291,6 @@ class Tableau:
 
         self.c = np.append(self.c, new_c)
         self.A = np.c_[self.A, new_a]
-
 
     def _add_constraint(self, new_r, new_b):
         if self.v:

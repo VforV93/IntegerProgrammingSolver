@@ -7,7 +7,7 @@ from rules import dantzig_rule
 
 print("\n|| --- --- --- --- --- --- --- --- --- --- START --- --- --- --- --- --- --- --- --- --- ||")
 # n
-c = np.array([-1, -1, 0, 0, 0], dtype=float)
+c = np.array([1, 1, 0, 0, 0], dtype=float)
 # m x n
 A = np.array([[1, 1, 1, 0, 0],
               [1, -1, 0, -1, 0],
@@ -27,6 +27,7 @@ try:
         t.step()
         print("|| --- --- --- --- --- ||")
 
+    print(t)
     print("|| --- --- --- --- --- --- --- --- --- --- END --- --- --- --- --- --- --- --- --- ||\n")
 
     var_val = np.zeros(len(t.var), dtype=float)
