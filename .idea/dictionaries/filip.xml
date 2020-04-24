@@ -8,8 +8,12 @@
       <w>endc</w>
       <w>eseguendo</w>
       <w>isend</w>
+      <w>negb</w>
+      <w>negeq</w>
       <w>okblue</w>
       <w>okgreen</w>
+      <w>posb</w>
+      <w>poseq</w>
       <w>prec</w>
       <w>savesol</w>
       <w>summo</w>

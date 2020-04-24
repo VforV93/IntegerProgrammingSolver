@@ -135,6 +135,9 @@ class Tableau:
                 pos_1 = np.argmax(self.A[:, ib])  # 1's position in the ib's column
                 if pos_1 in i:
                     return pos_1, j
+
+        if len(i) == 0:  # all coeff in j column <= 0 --> No Pivot
+            raise NoSolution("[_pivot] impossible to find a pivot in column {}".format(j))
         return i[0], j
 
     def __pivoting(self, i, j):
