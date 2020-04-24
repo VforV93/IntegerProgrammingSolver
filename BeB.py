@@ -18,12 +18,18 @@ def depth_first(nodes_list, el):
 class BeB:
     def __init__(self, root: Tableau, insert_rule=breadth_first, v=True):
         self.nodes = list()  # (Tableau, idx, LB)
-        self.explored = list()  # TODO for making a nice and beautiful tree print
+        self.explored = list()
         self.insert_rule = insert_rule
         self.add(root)
         self.z = math.inf
         self.best_int_sol = None
         self.v = v
+
+        self._stats = {
+            'tot': 0,
+            'discarted': 0,
+            'killed': 0
+        }
 
         if self.v:
             print("\nRoot Node")
@@ -37,6 +43,13 @@ class BeB:
 
     def isend(self):
         return False if len(self.nodes) > 0 else True
+
+    def update_stats(self, key):
+        if key in self._stats.keys():
+            self._stats[key] = self._stats[key] + 1
+
+            if key != 'tot':
+                self._stats['tot'] = self._stats['tot'] + 1
 
     def expand(self):
         if len(self.nodes) == 0:
@@ -55,10 +68,16 @@ class BeB:
             if self.v:
                 print(f"{bcolors.UNDERLINE}Node Killed !!!{bcolors.ENDC}")
             self.explored.append(n)
+            self.update_stats('killed')
+
             return True
 
-        while not n.isend():
-            n.step()
+        try:
+            while not n.isend():
+                n.step()
+        except Exception as exc:
+            # print(f"{bcolors.FAIL}Exception: {exc}{bcolors.ENDC}")
+            self.update_stats('discarted')
 
         var_val = n.var_values()  # solution val
         int_var = True
@@ -79,10 +98,12 @@ class BeB:
                 temp_t._add_variable(new_c, new_col[:, None])
 
                 if not temp_t._base():
+                    new_lev_idx = idx + sep + str(j * 2)
                     try:
                         temp_t.phase1()
 
-                        new_lev_idx = idx + sep + str(j * len(n.var))
+                        if new_lev_idx == '0_9_1_7' or new_lev_idx == '0_9_1_8':
+                            print("ARR")
                         self.add(temp_t, new_lev_idx, math.ceil(n.sol))
                         if self.v:
                             print(f"{bcolors.OKGREEN}Generate and Added Node "
@@ -90,7 +111,7 @@ class BeB:
                     except:
                         if self.v:
                             print(f"{bcolors.WARNING}Discarded Node {new_lev_idx}{bcolors.ENDC} from variable: {j}")
-                        pass
+                        self.update_stats('discarted')
 
                 # Constraint 2: xj -s = int(var) + 1 or -xj +s = -int(var) - 1
                 temp_t = copy.deepcopy(n)
@@ -102,9 +123,11 @@ class BeB:
                 temp_t._add_variable(new_c, new_col[:, None])
 
                 if not temp_t._base():
+                    new_lev_idx = idx + sep + str(j * 2 + 1)
                     try:
                         temp_t.phase1()
-                        new_lev_idx = idx + sep + str(j * len(n.var) + 1)
+                        if new_lev_idx == '0_9_1_7' or new_lev_idx == '0_9_1_8':
+                            print("ARR")
                         self.add(temp_t, new_lev_idx, math.ceil(n.sol))
                         if self.v:
                             print(f"{bcolors.OKGREEN}Generate and Added Node "
@@ -112,7 +135,7 @@ class BeB:
                     except:
                         if self.v:
                             print(f"{bcolors.WARNING}Discarded Node {new_lev_idx}{bcolors.ENDC} from variable: {j}")
-                        pass
+                        self.update_stats('discarted')
 
         if int_var:  # Found integer variables
             if self.v:
@@ -121,12 +144,9 @@ class BeB:
             self.best_int_sol = var_val
 
         self.explored.append(n)
+        self.update_stats('tot')
         return True
 
-
     def __str__(self):
-        if len(self.nodes) > 0:
-            return ', '.join(map(str, self.nodes))
-        else:
-            return "No elements"
+        return str(self._stats)
 

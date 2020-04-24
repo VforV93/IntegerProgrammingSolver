@@ -1,11 +1,8 @@
 
 import numpy as np
-from Solver import Solver
-from errors import NoBase, bcolors
 from Tableau import Tableau
-from rules import dantzig_rule
-from BeB import BeB, depth_first
-
+from rules import bland_rule, dantzig_rule
+from BeB import BeB
 
 # Goal: we want to find the best integer solution on usage of ingredients to prepare recipes
 # in order to obtain the best benefits in term of (stomach, health, sanity)
@@ -13,7 +10,7 @@ from BeB import BeB, depth_first
 #               | - - -- - - | Meatballs | Waffles | Bacon&Egg | Roasted_Berries | Skewer1 | Skewer2 |
 # Ingredients   | Meat       | 1         |         | 2         |                 | 1       | 1       | <= actual value
 #               | Butter     |           | 1       |           |                 |         |         | <= actual value
-#               | Berries    |           | 1       |           | 1               | 2       |         | <= actual value
+#               | Berries    |           | 1       |           | 2               | 2       |         | <= actual value
 #               | Egg        |           | 1       | 1         |                 |         | 1       | <= actual value
 #               | Filler     | 3         | 1       | 1         |                 | 1       | 2       | <= actual value
 # Objective function max Σw*(st, he, sa)rj where w = (wst, whe, wsa), importance of measurement in % (sum = 1) ex (0.3, 0.5, 0.2)
@@ -38,28 +35,40 @@ weights = [.4, .4, .2]
 c = np.ndarray(len(recipes), dtype=float)
 for i, r in enumerate(recipes):
     c[i] = np.dot(weights, recipes_benefit[r])
-print(f"cost vector {c}\n")
 
-solver = Solver('max', rule=dantzig_rule, v=True)
-solver.add_cost(c)
-solver.add_negeq_constraint([1, 0, 2, 0, 1, 1, 9])
-solver.add_negeq_constraint([0, 1, 0, 0, 0, 0, 2])
-solver.add_negeq_constraint([0, 1, 0, 1, 2, 0, 13])
-solver.add_negeq_constraint([0, 1, 1, 0, 0, 1, 3])
-solver.add_negeq_constraint([3, 1, 1, 0, 1, 2, 20])
-solver.solve()
+# print(np.round(c))
+# c = np.round(c)
+A = np.array([[1, 0, 2, 0, 1, 1, 1, 0, 0, 0, 0],
+              [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+              [0, 1, 0, 2, 2, 0, 0, 0, 1, 0, 0],
+              [0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0],
+              [3, 1, 1, 0, 1, 2, 0, 0, 0, 0, 1]], dtype=float)
+c_min = np.append(c, np.zeros(A.shape[0]))
+c_min = -1 * c_min  # from max --> min
+b = np.array([9, 2, 13, 3, 20], dtype=float)
+var = np.array([0, 1, 2, 3, 4, 5], dtype=int)
 
-solver._t.v = 0  # for the B&B verbosity of Tableau set to 0
+
+t = Tableau(c_min, A, b, var, rule=dantzig_rule, v=1)
+print("---------")
+print(t)
+
+while not t.isend():
+    t.step()
+    print("|| --- --- --- --- --- ||")
+
+t.v = 0  # for the B&B verbosity of Tableau set to 0
 # I want the best integer solution
 print("\n|| --- --- --- --- --- --- --- --- --- START B&B --- --- --- --- --- --- --- --- --- --- ||")
-beb = BeB(solver._t, v=1)
+beb = BeB(t, v=1)
 while not beb.isend():
     beb.expand()
 
 print("\nBranch and Bound End!")
 if beb.best_int_sol is not None:
     print(f"Best integer solution: {beb.best_int_sol} ===> solution cost: "
-          f"{round(beb.z, 2)}. Max Problem solution cost {-1*round(beb.z, 2)}")
+          f"{-1*np.dot(beb.best_int_sol, c)}. Max Problem solution cost {np.dot(beb.best_int_sol, c)}")
 else:
     print("No Integer Solution")
+
 print(beb)

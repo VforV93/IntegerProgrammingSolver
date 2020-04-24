@@ -1,22 +1,7 @@
-import numpy as np
-from errors import DimensionError, NoBase, NoSolution, RankAWrong, bcolors
-from Tableau import Tableau
+from Solver import Solver
 
-from rules import bland_rule
-
-print("\n|| --- --- --- --- --- --- --- --- --- --- START --- --- --- --- --- --- --- --- --- --- ||")
-# n
-c = np.array([1, 0, 1, 0], dtype=float)
-# m x n
-A = np.array([[1, 2, 0, 1],
-              [0, 1, 2, 0]], dtype=float)
-# m
-b = np.array([-5, 6], dtype=float)
-var = np.array([0, 1, 2], dtype=int)
-
-try:
-    t = Tableau(c, A, b, var, bland_rule)
-except NoSolution as e:
-    print(f"{bcolors.FAIL} {e} {bcolors.ENDC}")
-except RankAWrong as e:
-    print(f"{bcolors.FAIL} {e} {bcolors.ENDC}")
+solver = Solver('min', v=True)
+solver.add_cost([1, 0, 1, 0])  # min: x1 + x3
+solver.add_eq_constraint([1, 2, 0, 1, -5])  # x1 + 2x2 +     + x4 = -5
+solver.add_eq_constraint([0, 1, 2, 0, 6])   #    +  x2 + 2x3      =  6
+solver.solve()

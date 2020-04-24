@@ -69,7 +69,6 @@ class Tableau:
     def step(self, rule=None):
         if self.v:
             print("Eseguendo Pivoting...")
-        #TODO before pivoting I want to save the states to take track of all the steps
 
         # for pivoting I need a feasible base
         if not self._base():
@@ -286,8 +285,7 @@ class Tableau:
                         if j not in phase_tableau.B and j not in artificial_base:
                             if phase_tableau.A[i_row, j] != 0:
                                 phase_tableau.__pivoting(i_row, j)
-                                phase_tableau._base()
-                                print(phase_tableau)
+                                phase_tableau.B[np.argmax(phase_tableau.A[:, j])] = j  # updating Base
                                 pivot_done = True
                                 break
 
@@ -297,10 +295,10 @@ class Tableau:
                                          f"{self.A.shape[0]}, eliminate the row number {i_row}")
                     check = np.isin(phase_tableau.B, artificial_base)
 
-                self.A = copy.deepcopy(phase_tableau.A[:, :self.A.shape[1]])
-                self.B = copy.deepcopy(phase_tableau.B)
-                self.b = copy.deepcopy(phase_tableau.b)
-                self._z = phase_tableau._z
+                self.A = np.around(copy.deepcopy(phase_tableau.A[:, :self.A.shape[1]]), self.__appr)
+                self.B = np.around(copy.deepcopy(phase_tableau.B), self.__appr)
+                self.b = np.around(copy.deepcopy(phase_tableau.b), self.__appr)
+                self._z = np.around(phase_tableau._z, self.__appr)
                 self.__azzera_costi_base()
                 self.save_sol()
                 if self.v:
@@ -366,5 +364,5 @@ class Tableau:
         return s
 
     def __hash__(self):
-        return hash(tuple(np.round(self.c, 4))) ^ hash(np.round(self._z, 4)) ^ \
-               hash(tuple(np.round(self.A.flatten(), 4))) ^ hash(tuple(np.round(self.b, 4)))
+        return hash(tuple(np.round(self.c, 2))) ^ hash(np.round(self._z, 2)) ^ \
+               hash(tuple(np.round(self.A.flatten(), 2))) ^ hash(tuple(np.round(self.b, 2)))
