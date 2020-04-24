@@ -1,10 +1,11 @@
 import numpy as np
 from errors import DimensionError, NoBase, NoSolution, RankAWrong, bcolors
+from rules import bland_rule
 import copy
 
 
 class Tableau:
-    def __init__(self, c, A, b, var, rule, B=None, v=False, approximation=6):
+    def __init__(self, c, A, b, var, rule, B=None, v=False, z=0, approximation=8):
         self.c = c                  # cost vector
         self.A = A                  # constraint matrix coefficients
         self.b = b                  # constant terms vector
@@ -13,9 +14,10 @@ class Tableau:
         self.rule = rule            # Function to choose wich column enter to the Base
         self.v = v  # Verbosity
         self.history = list()
-        self._z = float(0)          # solution cost
+        self._z = float(z)          # solution cost
         self.__savesol = False
         self.__appr = approximation
+        self.__degenerate = {}
 
         # Check dimensions length of c, A, and b
         m = self.A.shape[0]  # num of rows
@@ -42,6 +44,7 @@ class Tableau:
         if self.v:
             print(self)
         self.__savesol = True  # after the phase1 I want to store all the pivoting iteration sol and cost
+        self.__degen()  # starting point for degeneration detection
 
     """
     # Final Tableau if all cost coefficients are positive OR it is not possible to identify a feasible base
@@ -94,7 +97,25 @@ class Tableau:
 
         if self.v:
             print("...Ending Pivoting")
+
+        # Degenerative check
+        if self.__degen():  # degeneration accurred
+            if self.v:
+                print(f"{bcolors.WARNING}Degeneration occurred in pivoting, switched to bland rule{bcolors.ENDC}")
+            self.rule = bland_rule
+            self.__degenerate = {}  # reset degeneration dict
+            self.__degen()  # add current solution
         return self.A
+
+    def __degen(self):
+        key = hash(self)
+        if key in self.__degenerate.keys():
+            return True  # degeneration occurred
+        else:
+            self.__degenerate[hash(self)] = True
+
+        return False  # No degeneration
+
 
     # individuate the coordinate(i,j) of the pivot corresponding on column j
     def _pivot(self, j):
@@ -109,7 +130,7 @@ class Tableau:
                 elif ba == _min:
                     i.append(r)
         if len(i) > 1:  # parity on the choice of the pivot
-            for ib in self.B:  # the most left column in base must go out - blend rule specification
+            for ib in self.B:  # the most left column in base must go out - bland rule specification
                 pos_1 = np.argmax(self.A[:, ib])  # 1's position in the ib's column
                 if pos_1 in i:
                     return pos_1, j
@@ -339,3 +360,7 @@ class Tableau:
 
         s = '\n'.join(s)
         return s
+
+    def __hash__(self):
+        return hash(tuple(np.round(self.c, 4))) ^ hash(np.round(self._z, 4)) ^ \
+               hash(tuple(np.round(self.A.flatten(), 4))) ^ hash(tuple(np.round(self.b, 4)))
