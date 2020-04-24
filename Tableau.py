@@ -44,6 +44,7 @@ class Tableau:
         if self.v:
             print(self)
         self.__savesol = True  # after the phase1 I want to store all the pivoting iteration sol and cost
+        self.save_sol()
         self.__degen()  # starting point for degeneration detection
 
     """

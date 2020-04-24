@@ -1,5 +1,6 @@
 from Tableau import Tableau
 import numpy as np
+import matplotlib.pyplot as plt
 from rules import dantzig_rule
 from errors import NoBase, bcolors
 
@@ -54,7 +55,8 @@ class Solver:
         temp = np.c_[temp, -1*np.eye(m)]
 
         self.A = np.c_[self.A, np.zeros((self.A.shape[0], m))]
-        self.A = np.vstack((self.A, temp))
+        if len(temp)>0:
+            self.A = np.vstack((self.A, temp))
         self.c = np.append(self.c, np.zeros(self.A.shape[1]-len(self.c)))
         self.b = np.append(self.__negb, self.__posb)
 
@@ -86,10 +88,36 @@ class Solver:
             print("** Min Problem **")
             print(f" z = {-1*sol}")
 
+    def plot(self):
+        if len(self.var) == 2:
+            # plot the feasible region
+            d = np.linspace(-2, 16, 300)
+            x, y = np.meshgrid(d, d)
 
+            plt.imshow((np.dot(self.__negeqA[0], [x,y]) >= 2).astype(int), extent=(x.min(), x.max(), y.min(), y.max()),
+                       origin="lower", cmap="Greys", alpha=0.3)
+            plt.show()
+            """
+            plt.imshow(((y >= 2) & (2 * y <= 25 - x) & (4 * y >= 2 * x - 8) & (y <= 2 * x - 5)).astype(int),
+                       extent=(x.min(), x.max(), y.min(), y.max()), origin="lower", cmap="Greys", alpha=0.3)
+            """
+
+
+"""
 solver = Solver('max', v=True)
 solver.add_cost([-1, 3])
 solver.add_negeq_constraint([1, 0, 3])  # <=
 solver.add_negeq_constraint([0, 1, 3])  # <=
 solver.add_poseq_constraint([4, 3, 12])  # >=
 solver.solve()
+"""
+
+solver = Solver('max', v=True)
+solver.add_cost([2, 1])
+solver.add_negeq_constraint([1, 0, 2])  # <=
+solver.add_negeq_constraint([1, 1, 3])  # <=
+solver.add_negeq_constraint([1, 2, 5])  # <=
+solver.solve()
+
+print(solver._t.history)
+solver.plot()
